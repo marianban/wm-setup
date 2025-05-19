@@ -1,0 +1,83 @@
+# The Caddyfile is an easy way to configure your Caddy web server.
+#
+# Unless the file starts with a global options block, the first
+# uncommented line is always the address of your site.
+#
+# To use your own domain name (with automatic HTTPS), first make
+# sure your domain's A/AAAA DNS records are properly pointed to
+# this machine's public IP, then replace the line below with your
+# domain name.
+
+{#
+closure.vps.wbsprt.com {
+  root * /usr/share/caddy
+  file_server browse
+
+  header {
+    Access-Control-Allow-Origin: *
+  }
+}
+
+demos.closure.sk {
+   root * /usr/share/caddy/slick-ui-demos
+   file_server {
+      browse
+      hide .*
+   }
+
+   header {
+     Access-Control-Allow-Origin: *
+   }
+}
+
+umami.closure.sk {
+  reverse_proxy localhost:3001
+}
+
+monitorix.closure.sk {
+  reverse_proxy localhost:8080
+}
+
+#}
+
+# leonafoto.sk
+http://leonafoto.closure.local {
+  route /gallery/* {
+    uri strip_prefix /gallery
+    file_server {
+      root /var/www/leonafoto/images
+    }
+  }
+
+  reverse_proxy localhost:3000
+
+  header {
+    Access-Control-Allow-Origin: https://leonafoto.sk
+  }
+}
+
+http://monitorix.closure.local {
+  reverse_proxy localhost:8080
+}
+
+http://umami.closure.local {
+  reverse_proxy localhost:3001
+}
+
+http://demos.closure.local {
+   root * /var/www/slick-ui-demos/source
+   file_server {
+      browse
+      hide .*
+   }
+
+   header {
+     Access-Control-Allow-Origin: *
+   }
+}
+
+{#
+www.leonafoto.sk {
+  redir https://leonafoto.sk{uri} permanent
+}
+#}
