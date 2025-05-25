@@ -449,6 +449,133 @@
       shell: pm2 save
       become_user: "{{ web_user }}"
 
+    # ——————— Fulstav (WordPress/PHP⟶Caddy) site setup ——————— #
+
+    - name: Install prerequisites for adding PPAs
+      apt:
+        name:
+          - software-properties-common
+          - apt-transport-https
+          - ca-certificates
+          - lsb-release
+        state: present
+
+    - name: Add Ondřej Surý’s PHP PPA
+      apt_repository:
+        repo: ppa:ondrej/php
+        state: present
+
+    - name: Install PHP 8.2 FPM & extensions
+      apt:
+        name:
+          - php8.2-fpm
+          - php8.2-mysql
+          - php8.2-xml
+          - php8.2-gd
+          - php8.2-mbstring
+          - php8.2-curl
+          - php8.2-zip
+          - php8.2-cli
+          - tar
+          - unzip
+          - less
+          - mariadb-client
+        state: present
+
+    - name: Ensure /var/www/fulstav exists with group=web and setgid
+      file:
+        path: /var/www/fulstav
+        state: directory
+        owner: root
+        group: "{{ web_user }}"
+        mode: "u=rwx,g=rwx,o=rx,g+s"
+
+    - name: Download WordPress 6.8.1 archive
+      get_url:
+        url: https://wordpress.org/wordpress-6.8.1.tar.gz
+        dest: /tmp/wordpress-6.8.1.tar.gz
+        mode: '0644'
+
+    - name: Extract WordPress into site directory (flattened)
+      unarchive:
+        src: /tmp/wordpress-6.8.1.tar.gz
+        dest: /var/www/fulstav
+        remote_src: yes
+        extra_opts: ['--strip-components=1']
+        creates: /var/www/fulstav/wp-admin
+
+    - name: Ensure correct ownership on WordPress files
+      file:
+        path: /var/www/fulstav
+        recurse: yes
+        owner: "{{ web_user }}"
+        group: "{{ web_user }}"
+
+    - name: Render wp-config.php
+      template:
+        src: fulstav/wp-config.php.j2
+        dest: /var/www/fulstav/wp-config.php
+        owner: "{{ web_user }}"
+        group: "{{ web_user }}"
+        mode: '0644'
+
+    - name: Create Fulstav database
+      community.mysql.mysql_db:
+        name: "{{ fulstav_db_name}}"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+    - name: Create Fulstav DB user
+      community.mysql.mysql_user:
+        name: "{{ fulstav_db_user }}"
+        password: "{{ fulstav_db_user_password }}"
+        priv: "{{ fulstav_db_name }}.*:ALL"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+    - name: Ensure php8.2-fpm is running
+      systemd:
+        name: php8.2-fpm
+        state: started
+        enabled: yes
+
+    - name: Install WP-CLI
+      get_url:
+        url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+        dest: /usr/local/bin/wp
+        mode: '0755'
+
+    - name: Install WordPress core
+      command: >
+        wp core install
+        --url="fulstav.sk"
+        --title="Fulstav | stavebniny"
+        --admin_user="{{ fulstav_admin_user }}"
+        --admin_password="{{ fulstav_admin_password }}"
+        --admin_email="{{ fulstav_admin_email }}"
+        --skip-email
+      args:
+        chdir: /var/www/fulstav
+      become: yes
+      become_user: "{{ web_user }}"
+
+    - name: Install & activate Neve theme v4.0.1
+      command: >
+        wp theme install neve --version=4.0.1 --activate
+      args:
+        chdir: /var/www/fulstav
+      become: yes
+      become_user: "{{ web_user }}"
+
+    - name: Clone fullstav theme into WordPress
+      git:
+        repo: https://github.com/marianban/fullstav.git
+        dest: /var/www/fulstav/wp-content/themes/fullstav
+        version: master
+        force: yes
+        accept_hostkey: yes
+      become: yes
+      become_user: "{{ web_user }}"
 
   handlers:
     - name: Reload Caddy

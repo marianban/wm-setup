@@ -76,6 +76,12 @@ http://demos.closure.local {
    }
 }
 
+http://fulstav.local {
+  root * /var/www/fulstav
+  file_server
+  php_fastcgi unix//run/php/php8.2-fpm.sock
+}
+
 {#
 www.leonafoto.sk {
   redir https://leonafoto.sk{uri} permanent
