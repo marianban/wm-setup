@@ -9,36 +9,6 @@
 # domain name.
 
 {#
-closure.vps.wbsprt.com {
-  root * /usr/share/caddy
-  file_server browse
-
-  header {
-    Access-Control-Allow-Origin: *
-  }
-}
-
-demos.closure.sk {
-   root * /usr/share/caddy/slick-ui-demos
-   file_server {
-      browse
-      hide .*
-   }
-
-   header {
-     Access-Control-Allow-Origin: *
-   }
-}
-
-umami.closure.sk {
-  reverse_proxy localhost:3001
-}
-
-monitorix.closure.sk {
-  reverse_proxy localhost:8080
-}
----
-
 
 # leonafoto.sk
 http://leonafoto.closure.local {
@@ -54,6 +24,10 @@ http://leonafoto.closure.local {
   header {
     Access-Control-Allow-Origin: https://leonafoto.sk
   }
+}
+
+www.leonafoto.sk {
+  redir https://leonafoto.sk{uri} permanent
 }
 
 http://monitorix.closure.local {
@@ -83,9 +57,3 @@ http://fullstav.closure.local {
   file_server
   php_fastcgi unix//run/php/php8.2-fpm.sock
 }
-
-{#
-www.leonafoto.sk {
-  redir https://leonafoto.sk{uri} permanent
-}
-#}
