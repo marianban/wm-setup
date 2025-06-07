@@ -68,24 +68,24 @@
         group: "{{ web_user }}"
         mode: "u=rwx,g=rwx,o=rx,g+s"
 
-    - name: Bootstrap NodeSource setup script (Node.js 22.x)
-      shell: curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-      args:
-        executable: /bin/bash
+    # - name: Bootstrap NodeSource setup script (Node.js 22.x)
+    #   shell: curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+    #   args:
+    #     executable: /bin/bash
 
-    - name: Install Node.js & build-essential
-      apt:
-        name:
-          - nodejs
-          - build-essential
-        state: present
-        update_cache: yes
+    # - name: Install Node.js & build-essential
+    #   apt:
+    #     name:
+    #       - nodejs
+    #       - build-essential
+    #     state: present
+    #     update_cache: yes
 
-    - name: Install PM2 globally
-      npm:
-        name: pm2
-        global: yes
-        executable: /usr/bin/npm
+    # - name: Install PM2 globally
+    #   npm:
+    #     name: pm2
+    #     global: yes
+    #     executable: /usr/bin/npm
 
     - name: Install Caddy prerequisites
       apt:
@@ -147,199 +147,199 @@
         groups: "{{ web_user }}"
         append: yes
 
-    - name: Bootstrap PM2 startup for web user
-      shell: pm2 startup systemd -u {{ web_user }} --hp /home/{{ web_user }}
-      args:
-        creates: "/etc/systemd/system/pm2-{{ web_user }}.service"
+    # - name: Bootstrap PM2 startup for web user
+    #   shell: pm2 startup systemd -u {{ web_user }} --hp /home/{{ web_user }}
+    #   args:
+    #     creates: "/etc/systemd/system/pm2-{{ web_user }}.service"
 
-    # ——————— leonafoto website setup ——————— #
-    - name: Pull or update leonafoto repo as build user
-      git:
-        repo: https://github.com/marianban/leonafoto.git
-        dest: /var/www/leonafoto/source
-        version: main
-        update: yes
-        force: yes
-        accept_hostkey: yes
-      become_user: "{{ build_user }}"
+    # # ——————— leonafoto website setup ——————— #
+    # - name: Pull or update leonafoto repo as build user
+    #   git:
+    #     repo: https://github.com/marianban/leonafoto.git
+    #     dest: /var/www/leonafoto/source
+    #     version: main
+    #     update: yes
+    #     force: yes
+    #     accept_hostkey: yes
+    #   become_user: "{{ build_user }}"
 
-    - name: Ensure images directory exists
-      file:
-        path: /var/www/leonafoto/images
-        state: directory
-        owner: "{{ web_user }}"
-        group: "{{ web_user }}"
-        mode: "u=rwx,g=rwX,o="
+    # - name: Ensure images directory exists
+    #   file:
+    #     path: /var/www/leonafoto/images
+    #     state: directory
+    #     owner: "{{ web_user }}"
+    #     group: "{{ web_user }}"
+    #     mode: "u=rwx,g=rwX,o="
 
-    - name: Copy image files
-      copy:
-        src: "{{ item }}"
-        dest: /var/www/leonafoto/images/
-        owner: "{{ web_user }}"
-        group: "{{ web_user }}"
-        mode: "u=rwx,g=rwX,o="
-      loop: "{{ lookup('fileglob','/mnt/e/closure/leonafoto/images/*',wantlist=True) }}"
+    # - name: Copy image files
+    #   copy:
+    #     src: "{{ item }}"
+    #     dest: /var/www/leonafoto/images/
+    #     owner: "{{ web_user }}"
+    #     group: "{{ web_user }}"
+    #     mode: "u=rwx,g=rwX,o="
+    #   loop: "{{ lookup('fileglob','/mnt/e/closure/leonafoto/images/*',wantlist=True) }}"
 
-    - name: Ensure data directory exists
-      file:
-        path: /var/www/leonafoto/data
-        state: directory
-        owner: "{{ web_user }}"
-        group: "{{ web_user }}"
-        mode: "u=rwx,g=rwX,o="
+    # - name: Ensure data directory exists
+    #   file:
+    #     path: /var/www/leonafoto/data
+    #     state: directory
+    #     owner: "{{ web_user }}"
+    #     group: "{{ web_user }}"
+    #     mode: "u=rwx,g=rwX,o="
 
-    - name: Copy data files
-      copy:
-        src: "{{ item }}"
-        dest: /var/www/leonafoto/data/
-        owner: "{{ web_user }}"
-        group: "{{ web_user }}"
-        mode: "u=rwx,g=rwX,o="
-      loop: "{{ lookup('fileglob','/mnt/e/closure/leonafoto/data/*',wantlist=True) }}"
+    # - name: Copy data files
+    #   copy:
+    #     src: "{{ item }}"
+    #     dest: /var/www/leonafoto/data/
+    #     owner: "{{ web_user }}"
+    #     group: "{{ web_user }}"
+    #     mode: "u=rwx,g=rwX,o="
+    #   loop: "{{ lookup('fileglob','/mnt/e/closure/leonafoto/data/*',wantlist=True) }}"
 
-    - name: Copy environment file
-      copy:
-        src: /mnt/e/closure/leonafoto/.env.local
-        dest: /var/www/leonafoto/source/web/.env.local
-        owner: "{{ build_user }}"
-        group: "{{ web_user }}"
-        mode: "u=rw,g=rw,o="
+    # - name: Copy environment file
+    #   copy:
+    #     src: /mnt/e/closure/leonafoto/.env.local
+    #     dest: /var/www/leonafoto/source/web/.env.local
+    #     owner: "{{ build_user }}"
+    #     group: "{{ web_user }}"
+    #     mode: "u=rw,g=rw,o="
 
-    - name: Install npm dependencies for leonafoto
-      command: npm install
-      args:
-        chdir: /var/www/leonafoto/source/web
-      become_user: "{{ build_user }}"
+    # - name: Install npm dependencies for leonafoto
+    #   command: npm install
+    #   args:
+    #     chdir: /var/www/leonafoto/source/web
+    #   become_user: "{{ build_user }}"
 
-    - name: Run npm build for leonafoto
-      command: npm run build
-      args:
-        chdir: /var/www/leonafoto/source/web
-      become_user: "{{ build_user }}"
+    # - name: Run npm build for leonafoto
+    #   command: npm run build
+    #   args:
+    #     chdir: /var/www/leonafoto/source/web
+    #   become_user: "{{ build_user }}"
 
-    - name: Start leonafoto app with PM2
-      shell: pm2 start npm --name leonafoto -- start
-      args:
-        chdir: /var/www/leonafoto/source/web
-      become_user: "{{ web_user }}"
+    # - name: Start leonafoto app with PM2
+    #   shell: pm2 start npm --name leonafoto -- start
+    #   args:
+    #     chdir: /var/www/leonafoto/source/web
+    #   become_user: "{{ web_user }}"
 
-    - name: Save PM2 process list
-      shell: pm2 save
-      become_user: "{{ web_user }}"
+    # - name: Save PM2 process list
+    #   shell: pm2 save
+    #   become_user: "{{ web_user }}"
 
-    # ——————— Monitorix installation ——————— #
-    - name: Install Monitorix
-      apt:
-        name: monitorix
-        state: present
-        update_cache: yes
+    # # ——————— Monitorix installation ——————— #
+    # - name: Install Monitorix
+    #   apt:
+    #     name: monitorix
+    #     state: present
+    #     update_cache: yes
 
-    - name: Ensure Monitorix service is enabled & running
-      systemd:
-        name: monitorix
-        state: started
-        enabled: yes
+    # - name: Ensure Monitorix service is enabled & running
+    #   systemd:
+    #     name: monitorix
+    #     state: started
+    #     enabled: yes
 
-    # ——————— Slick UI Demos installation ——————— #
-    - name: Pull git-repo-auto-publish repo as build user
-      git:
-        repo: https://github.com/marianban/git-repo-auto-publish.git
-        dest: "/home/{{ build_user }}/files/git-repo-auto-publish"
-        version: release
-        update: yes
-        force: yes
-        accept_hostkey: yes
-      become_user: "{{ build_user }}"
+    # # ——————— Slick UI Demos installation ——————— #
+    # - name: Pull git-repo-auto-publish repo as build user
+    #   git:
+    #     repo: https://github.com/marianban/git-repo-auto-publish.git
+    #     dest: "/home/{{ build_user }}/files/git-repo-auto-publish"
+    #     version: release
+    #     update: yes
+    #     force: yes
+    #     accept_hostkey: yes
+    #   become_user: "{{ build_user }}"
 
-    - name: Copy script.sh into remote git-repo-auto-publish directory
-      copy:
-        src: git-repo-auto-publish/script.sh
-        dest: "/home/{{ build_user }}/script.sh"
-        owner: "{{ build_user }}"
-        mode: "u=rwx,go=rx"
+    # - name: Copy script.sh into remote git-repo-auto-publish directory
+    #   copy:
+    #     src: git-repo-auto-publish/script.sh
+    #     dest: "/home/{{ build_user }}/script.sh"
+    #     owner: "{{ build_user }}"
+    #     mode: "u=rwx,go=rx"
 
-    - name: Copy cronjob.env.sh into remote ~/ directory
-      copy:
-        src: git-repo-auto-publish/cronjob.env.sh
-        dest: "/home/{{ build_user }}/cronjob.env.sh"
-        owner: "{{ build_user }}"
-        mode: "u=rwx,go=rx"
+    # - name: Copy cronjob.env.sh into remote ~/ directory
+    #   copy:
+    #     src: git-repo-auto-publish/cronjob.env.sh
+    #     dest: "/home/{{ build_user }}/cronjob.env.sh"
+    #     owner: "{{ build_user }}"
+    #     mode: "u=rwx,go=rx"
 
-    - name: Copy .env into remote git-repo-auto-publish directory
-      copy:
-        src: git-repo-auto-publish/.env
-        dest: "/home/{{ build_user }}/files/git-repo-auto-publish/.env"
-        owner: "{{ build_user }}"
-        mode: "u=rw,go=r"
+    # - name: Copy .env into remote git-repo-auto-publish directory
+    #   copy:
+    #     src: git-repo-auto-publish/.env
+    #     dest: "/home/{{ build_user }}/files/git-repo-auto-publish/.env"
+    #     owner: "{{ build_user }}"
+    #     mode: "u=rw,go=r"
 
-    - name: Install NodeGit & Python build dependencies
-      apt:
-        name:
-          - build-essential
-          - pkg-config
-          - libssl-dev
-          - libkrb5-dev
-          - libcurl4-openssl-dev
-          - python-is-python3
-        state: present
-        update_cache: yes
+    # - name: Install NodeGit & Python build dependencies
+    #   apt:
+    #     name:
+    #       - build-essential
+    #       - pkg-config
+    #       - libssl-dev
+    #       - libkrb5-dev
+    #       - libcurl4-openssl-dev
+    #       - python-is-python3
+    #     state: present
+    #     update_cache: yes
 
-    - name: Install NVM and Node 22 for build user
-      become_user: "{{ build_user }}"
-      shell: |
-        export NVM_DIR="$HOME/.nvm"
-        if [ ! -d "$NVM_DIR" ]; then
-          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
-        fi
-        . "$NVM_DIR/nvm.sh"
-        nvm install 22
-        nvm alias default 22
-      args:
-        executable: /bin/bash
-        creates: "/home/{{ build_user }}/.nvm"
+    # - name: Install NVM and Node 22 for build user
+    #   become_user: "{{ build_user }}"
+    #   shell: |
+    #     export NVM_DIR="$HOME/.nvm"
+    #     if [ ! -d "$NVM_DIR" ]; then
+    #       curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+    #     fi
+    #     . "$NVM_DIR/nvm.sh"
+    #     nvm install 22
+    #     nvm alias default 22
+    #   args:
+    #     executable: /bin/bash
+    #     creates: "/home/{{ build_user }}/.nvm"
 
-    - name: Ensure NVM is loaded in build user’s shell
-      become_user: "{{ build_user }}"
-      lineinfile:
-        path: "/home/{{ build_user }}/.bashrc"
-        create: yes
-        line: 'export NVM_DIR="$HOME/.nvm"'
+    # - name: Ensure NVM is loaded in build user’s shell
+    #   become_user: "{{ build_user }}"
+    #   lineinfile:
+    #     path: "/home/{{ build_user }}/.bashrc"
+    #     create: yes
+    #     line: 'export NVM_DIR="$HOME/.nvm"'
 
-    - name: Add NVM source to build user’s shell
-      become_user: "{{ build_user }}"
-      lineinfile:
-        path: "/home/{{ build_user }}/.bashrc"
-        line: '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"'
+    # - name: Add NVM source to build user’s shell
+    #   become_user: "{{ build_user }}"
+    #   lineinfile:
+    #     path: "/home/{{ build_user }}/.bashrc"
+    #     line: '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"'
 
-    - name: Install npm dependencies for git-repo-auto-publish with Node 22
-      become_user: "{{ build_user }}"
-      shell: |
-        export NVM_DIR="$HOME/.nvm"
-        . "$NVM_DIR/nvm.sh"
-        nvm use 22
-        npm install
-      args:
-        executable: /bin/bash
-        chdir: "/home/{{ build_user }}/files/git-repo-auto-publish"
+    # - name: Install npm dependencies for git-repo-auto-publish with Node 22
+    #   become_user: "{{ build_user }}"
+    #   shell: |
+    #     export NVM_DIR="$HOME/.nvm"
+    #     . "$NVM_DIR/nvm.sh"
+    #     nvm use 22
+    #     npm install
+    #   args:
+    #     executable: /bin/bash
+    #     chdir: "/home/{{ build_user }}/files/git-repo-auto-publish"
 
-    - name: Pull slick-ui-demos repo as build user
-      git:
-        repo: https://github.com/marianban/slick-ui-demos.git
-        dest: /var/www/slick-ui-demos/source
-        version: release
-        update: yes
-        force: yes
-        accept_hostkey: yes
-      become_user: "{{ build_user }}"
+    # - name: Pull slick-ui-demos repo as build user
+    #   git:
+    #     repo: https://github.com/marianban/slick-ui-demos.git
+    #     dest: /var/www/slick-ui-demos/source
+    #     version: release
+    #     update: yes
+    #     force: yes
+    #     accept_hostkey: yes
+    #   become_user: "{{ build_user }}"
 
-    - name: Setup auto-publish cron for build user
-      cron:
-        name: "Auto-publish via script.sh"
-        minute: "*/1"
-        user: "{{ build_user }}"
-        job: 'bash -lc ". ~/cronjob.env.sh >> ~/cronjob.log 2>&1; nvm use 22 1> ~/nvmuse.log; ~/script.sh >> ~/auto-publish.log 2>&1; kill $SSH_AGENT_PID"'
-      environment:
-        HOME: "/home/{{ build_user }}"
+    # - name: Setup auto-publish cron for build user
+    #   cron:
+    #     name: "Auto-publish via script.sh"
+    #     minute: "*/1"
+    #     user: "{{ build_user }}"
+    #     job: 'bash -lc ". ~/cronjob.env.sh >> ~/cronjob.log 2>&1; nvm use 22 1> ~/nvmuse.log; ~/script.sh >> ~/auto-publish.log 2>&1; kill $SSH_AGENT_PID"'
+    #   environment:
+    #     HOME: "/home/{{ build_user }}"
 
     # ——————— MariaDB Installation ——————— #
     - name: Install PyMySQL for Ansible’s mysql modules
@@ -375,81 +375,81 @@
         state: started
         enabled: yes
 
-    # ——————— Umami installation ——————— #
-    - name: Pull Umami v2.18.1 as build user
-      git:
-        repo: https://github.com/umami-software/umami.git
-        dest: /var/www/umami/source
-        version: v2.18.1
-        update: yes
-        force: yes
-        accept_hostkey: yes
-      become_user: "{{ build_user }}"
+#     # ——————— Umami installation ——————— #
+#     - name: Pull Umami v2.18.1 as build user
+#       git:
+#         repo: https://github.com/umami-software/umami.git
+#         dest: /var/www/umami/source
+#         version: v2.18.1
+#         update: yes
+#         force: yes
+#         accept_hostkey: yes
+#       become_user: "{{ build_user }}"
 
-    - name: Create umami_db database
-      community.mysql.mysql_db:
-        name: umami_db
-        state: present
-        check_implicit_admin: yes
-        login_unix_socket: /var/run/mysqld/mysqld.sock
+#     - name: Create umami_db database
+#       community.mysql.mysql_db:
+#         name: umami_db
+#         state: present
+#         check_implicit_admin: yes
+#         login_unix_socket: /var/run/mysqld/mysqld.sock
 
-    - name: Create umami_db_user with admin access to umami_db
-      community.mysql.mysql_user:
-        name: umami_db_user
-        password: "{{ umami_db_user_password }}"
-        host: localhost
-        priv: "umami_db.*:ALL"
-        state: present
-        check_implicit_admin: yes
-        login_unix_socket: /var/run/mysqld/mysqld.sock
+#     - name: Create umami_db_user with admin access to umami_db
+#       community.mysql.mysql_user:
+#         name: umami_db_user
+#         password: "{{ umami_db_user_password }}"
+#         host: localhost
+#         priv: "umami_db.*:ALL"
+#         state: present
+#         check_implicit_admin: yes
+#         login_unix_socket: /var/run/mysqld/mysqld.sock
 
-    - name: Render Umami environment file
-      template:
-        src: umami/.env.j2
-        dest: /var/www/umami/source/.env
-        owner: "{{ build_user }}"
-        group: "{{ web_user }}"
-        mode: "u=rw,g=r,o="
+#     - name: Render Umami environment file
+#       template:
+#         src: umami/.env.j2
+#         dest: /var/www/umami/source/.env
+#         owner: "{{ build_user }}"
+#         group: "{{ web_user }}"
+#         mode: "u=rw,g=r,o="
 
-    - name: Install Yarn globally
-      npm:
-        name: yarn
-        global: yes
+#     - name: Install Yarn globally
+#       npm:
+#         name: yarn
+#         global: yes
 
-    - name: Install Umami dependencies with Yarn (increased timeouts)
-      become_user: "{{ build_user }}"
-      shell: yarn install \
-              --network-concurrency 1 \
-              --network-timeout 600000 \
-      args:
-        chdir: /var/www/umami/source
-        executable: /bin/bash
+#     - name: Install Umami dependencies with Yarn (increased timeouts)
+#       become_user: "{{ build_user }}"
+#       shell: yarn install \
+#               --network-concurrency 1 \
+#               --network-timeout 600000 \
+#       args:
+#         chdir: /var/www/umami/source
+#         executable: /bin/bash
 
-# Currently there seems to be a migration issue that leads to a fatal error. P3018 on the command prisma migrate deploy. This is a workaround.
-    - name: Mark Prisma migration 05_add_visit_id as applied
-      shell: npx prisma migrate resolve --applied "05_add_visit_id" --schema /var/www/umami/source/db/mysql/schema.prisma
-      args:
-        chdir: /var/www/umami/source
-      become_user: "{{ build_user }}"
+# # Currently there seems to be a migration issue that leads to a fatal error. P3018 on the command prisma migrate deploy. This is a workaround.
+#     - name: Mark Prisma migration 05_add_visit_id as applied
+#       shell: npx prisma migrate resolve --applied "05_add_visit_id" --schema /var/www/umami/source/db/mysql/schema.prisma
+#       args:
+#         chdir: /var/www/umami/source
+#       become_user: "{{ build_user }}"
 
-    - name: Build Umami frontend with Yarn
-      become_user: "{{ build_user }}"
-      shell: yarn build
-      args:
-        chdir: /var/www/umami/source
-        executable: /bin/bash
+#     - name: Build Umami frontend with Yarn
+#       become_user: "{{ build_user }}"
+#       shell: yarn build
+#       args:
+#         chdir: /var/www/umami/source
+#         executable: /bin/bash
 
-    - name: Start Umami app with PM2
-      shell: pm2 start yarn --name umami -- start-env
-      args:
-        chdir: /var/www/umami/source
-      become_user: "{{ web_user }}"
+#     - name: Start Umami app with PM2
+#       shell: pm2 start yarn --name umami -- start-env
+#       args:
+#         chdir: /var/www/umami/source
+#       become_user: "{{ web_user }}"
 
-    - name: Save PM2 process list
-      shell: pm2 save
-      become_user: "{{ web_user }}"
+#     - name: Save PM2 process list
+#       shell: pm2 save
+#       become_user: "{{ web_user }}"
 
-    # ——————— Fulstav (WordPress/PHP⟶Caddy) site setup ——————— #
+    # ——————— fullstav (WordPress/PHP⟶Caddy) site setup ——————— #
 
     - name: Install prerequisites for adding PPAs
       apt:
@@ -482,9 +482,50 @@
           - mariadb-client
         state: present
 
-    - name: Ensure /var/www/fulstav exists with group=web and setgid
+    - name: Ensure PHP‐FPM pool runs as {{ web_user }}:{{ web_user }}
+      lineinfile:
+        path: /etc/php/8.2/fpm/pool.d/www.conf
+        regexp: '^(user\s*=\s*).*'
+        line: "user = {{ web_user }}"
+        backup: yes
+
+    - name: Set PHP‐FPM pool group to {{ web_user }}
+      lineinfile:
+        path: /etc/php/8.2/fpm/pool.d/www.conf
+        regexp: '^(group\s*=\s*).*'
+        line: "group = {{ web_user }}"
+        backup: yes
+
+    - name: Make PHP‐FPM socket owned by {{ web_user }}:{{ web_user }}
+      lineinfile:
+        path: /etc/php/8.2/fpm/pool.d/www.conf
+        regexp: '^(;?\s*listen\.owner\s*=\s*).*'
+        line: "listen.owner = {{ web_user }}"
+        backup: yes
+
+    - name: Make PHP‐FPM socket group {{ web_user }}
+      lineinfile:
+        path: /etc/php/8.2/fpm/pool.d/www.conf
+        regexp: '^(;?\s*listen\.group\s*=\s*).*'
+        line: "listen.group = {{ web_user }}"
+        backup: yes
+
+    - name: Ensure PHP-FPM socket is group-writable (0660)
+      lineinfile:
+        path: /etc/php/8.2/fpm/pool.d/www.conf
+        regexp: '^(;?\s*listen\.mode\s*=).*'
+        line: "listen.mode = 0660"
+        backup: yes
+
+    - name: Restart php8.2-fpm to apply pool changes
+      systemd:
+        name: php8.2-fpm
+        state: restarted
+        enabled: yes
+
+    - name: Ensure /var/www/fullstav exists with group=web and setgid
       file:
-        path: /var/www/fulstav
+        path: /var/www/fullstav
         state: directory
         owner: root
         group: "{{ web_user }}"
@@ -499,45 +540,61 @@
     - name: Extract WordPress into site directory (flattened)
       unarchive:
         src: /tmp/wordpress-6.8.1.tar.gz
-        dest: /var/www/fulstav
+        dest: /var/www/fullstav
         remote_src: yes
         extra_opts: ['--strip-components=1']
-        creates: /var/www/fulstav/wp-admin
+        creates: /var/www/fullstav/wp-admin
+
+    # - name: Test index.php
+    #   become_user: "{{ web_user }}"
+    #   lineinfile:
+    #     path: "/var/www/fullstav/index.php"
+    #     create: yes
+    #     line: "<?php ini_set('display_errors', 1); ini_set('display_startup_errors', 1); error_reporting(E_ALL); phpinfo();"
 
     - name: Ensure correct ownership on WordPress files
       file:
-        path: /var/www/fulstav
+        path: /var/www/fullstav
         recurse: yes
         owner: "{{ web_user }}"
         group: "{{ web_user }}"
 
     - name: Render wp-config.php
       template:
-        src: fulstav/wp-config.php.j2
-        dest: /var/www/fulstav/wp-config.php
+        src: fullstav/wp-config.php.j2
+        dest: /var/www/fullstav/wp-config.php
         owner: "{{ web_user }}"
         group: "{{ web_user }}"
         mode: '0644'
 
-    - name: Create Fulstav database
+    - name: Create fullstav database
       community.mysql.mysql_db:
-        name: "{{ fulstav_db_name}}"
+        name: "{{ fullstav_db_name}}"
         state: present
         login_unix_socket: /var/run/mysqld/mysqld.sock
 
-    - name: Create Fulstav DB user
+    - name: Create fullstav DB user
       community.mysql.mysql_user:
-        name: "{{ fulstav_db_user }}"
-        password: "{{ fulstav_db_user_password }}"
-        priv: "{{ fulstav_db_name }}.*:ALL"
+        name: "{{ fullstav_db_user }}"
+        password: "{{ fullstav_db_user_password }}"
+        priv: "{{ fullstav_db_name }}.*:ALL"
         state: present
         login_unix_socket: /var/run/mysqld/mysqld.sock
 
-    - name: Ensure php8.2-fpm is running
-      systemd:
-        name: php8.2-fpm
-        state: started
-        enabled: yes
+    - name: Copy WP database dump to remote host
+      copy:
+        src: /mnt/e/closure/fulstav/wb_db.sql
+        dest: /tmp/wb_db.sql
+        mode: '0644'
+
+    - name: Import WP database
+      community.mysql.mysql_db:
+        name: "{{ fullstav_db_name }}"
+        state: import
+        target: /tmp/wb_db.sql
+        login_user: "{{ fullstav_db_user }}"
+        login_password: "{{ fullstav_db_user_password }}"
+        login_unix_socket: /var/run/mysqld/mysqld.sock
 
     - name: Install WP-CLI
       get_url:
@@ -545,37 +602,81 @@
         dest: /usr/local/bin/wp
         mode: '0755'
 
-    - name: Install WordPress core
-      command: >
-        wp core install
-        --url="fulstav.sk"
-        --title="Fulstav | stavebniny"
-        --admin_user="{{ fulstav_admin_user }}"
-        --admin_password="{{ fulstav_admin_password }}"
-        --admin_email="{{ fulstav_admin_email }}"
-        --skip-email
-      args:
-        chdir: /var/www/fulstav
-      become: yes
-      become_user: "{{ web_user }}"
+    # - name: Install WordPress core
+    #   command: >
+    #     wp core install
+    #     --url="fullstav.closure.local"
+    #     --title="fullstav | stavebniny"
+    #     --admin_user="{{ fullstav_admin_user }}"
+    #     --admin_password="{{ fullstav_admin_password }}"
+    #     --admin_email="{{ fullstav_admin_email }}"
+    #     --skip-email
+    #   args:
+    #     chdir: /var/www/fullstav
+    #   become: yes
+    #   become_user: "{{ web_user }}"
 
     - name: Install & activate Neve theme v4.0.1
       command: >
         wp theme install neve --version=4.0.1 --activate
       args:
-        chdir: /var/www/fulstav
+        chdir: /var/www/fullstav
       become: yes
       become_user: "{{ web_user }}"
+
+    - name: Install & activate Otter Page Builder Blocks v3.0.11
+      command: >
+        wp plugin install otter-blocks --version=3.0.11 --activate
+      args:
+        chdir: /var/www/fullstav
+      become: yes
+      become_user: "{{ web_user }}"
+
+    - name: Ensure wp-content/uploads is present and group‐writable
+      file:
+        path: /var/www/fullstav/wp-content/uploads
+        state: directory
+        owner: "{{ web_user }}"
+        group: "{{ web_user }}"
+        mode: "u=rwX,g=rwX,o=rX,g+s"
+
+    - name: Ensure destination uploads directory exists
+      file:
+        path: /var/www/fullstav/wp-content/uploads/2025/05
+        state: directory
+        owner: "{{ web_user }}"
+        group: "{{ web_user }}"
+        mode: 'u=rwX,g=rwX,o=rX'
+
+    - name: Copy May 2025 uploads from control machine
+      copy:
+        src: /mnt/c/xampp/htdocs/wordpress/wp-content/uploads/2025/05/
+        dest: /var/www/fullstav/wp-content/uploads/2025/05/
+        owner: "{{ web_user }}"
+        group: "{{ web_user }}"
+        mode: 'u=rwX,g=rwX,o=rX'
+
+    - name: Fix permissions on all uploaded files
+      file:
+        path: /var/www/fullstav/wp-content/uploads/2025/05
+        owner: "{{ web_user }}"
+        group: "{{ web_user }}"
+        mode: 'u=rwX,g=rwX,o=rX'
 
     - name: Clone fullstav theme into WordPress
       git:
         repo: https://github.com/marianban/fullstav.git
-        dest: /var/www/fulstav/wp-content/themes/fullstav
+        dest: /var/www/fullstav/wp-content/themes/fullstav
         version: master
         force: yes
         accept_hostkey: yes
       become: yes
       become_user: "{{ web_user }}"
+
+    - name: Reload Caddy at the end of the playbook
+      systemd:
+        name: caddy
+        state: reloaded
 
   handlers:
     - name: Reload Caddy

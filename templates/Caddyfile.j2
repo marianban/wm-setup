@@ -37,8 +37,8 @@ umami.closure.sk {
 monitorix.closure.sk {
   reverse_proxy localhost:8080
 }
+---
 
-#}
 
 # leonafoto.sk
 http://leonafoto.closure.local {
@@ -76,8 +76,10 @@ http://demos.closure.local {
    }
 }
 
-http://fulstav.local {
-  root * /var/www/fulstav
+#}
+
+http://fullstav.closure.local {
+  root * /var/www/fullstav
   file_server
   php_fastcgi unix//run/php/php8.2-fpm.sock
 }
