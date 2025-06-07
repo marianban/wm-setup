@@ -10,8 +10,7 @@
 
 {#
 
-# leonafoto.sk
-http://leonafoto.closure.local {
+{{ leonafoto_url }} {
   route /gallery/* {
     uri strip_prefix /gallery
     file_server {
@@ -22,23 +21,23 @@ http://leonafoto.closure.local {
   reverse_proxy localhost:3000
 
   header {
-    Access-Control-Allow-Origin: https://leonafoto.sk
+    Access-Control-Allow-Origin: {{ leonafoto_redirect_url }}
   }
 }
 
-www.leonafoto.sk {
-  redir https://leonafoto.sk{uri} permanent
+{{ leonafoto_www_url }} {
+  redir {{ leonafoto_redirect_url }}{uri} permanent
 }
 
-http://monitorix.closure.local {
+{{ monitorix_url }} {
   reverse_proxy localhost:8080
 }
 
-http://umami.closure.local {
+{{ umami_url }} {
   reverse_proxy localhost:3001
 }
 
-http://demos.closure.local {
+{{ demos_url }} {
    root * /var/www/slick-ui-demos/source
    file_server {
       browse
@@ -52,7 +51,7 @@ http://demos.closure.local {
 
 #}
 
-http://fullstav.closure.local {
+{{ fullstav_url }} {
   root * /var/www/fullstav
   file_server
   php_fastcgi unix//run/php/php8.2-fpm.sock

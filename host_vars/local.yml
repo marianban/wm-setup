@@ -1,3 +1,10 @@
 ansible_host: 192.168.0.102
 ansible_user: majo
 ansible_become: true
+
+leonafoto_url: "http://leonafoto.closure.local"
+leonafoto_www_url: "www.leonafoto.sk"
+monitorix_url: "http://monitorix.closure.local"
+umami_url: "http://umami.closure.local"
+demos_url: "http://demos.closure.local"
+fullstav_url: "http://fullstav.closure.local"

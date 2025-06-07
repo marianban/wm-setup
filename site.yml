@@ -1,6 +1,6 @@
 ---
 - name: Prep Ubuntu server for Node & Caddy deployments
-  hosts: closure
+  hosts: all
   become: yes
   collections:
     - ansible.posix
@@ -522,6 +522,7 @@
         name: php8.2-fpm
         state: restarted
         enabled: yes
+      notify: Reload Caddy
 
     - name: Ensure /var/www/fullstav exists with group=web and setgid
       file:
@@ -673,13 +674,8 @@
       become: yes
       become_user: "{{ web_user }}"
 
-    - name: Reload Caddy at the end of the playbook
-      systemd:
-        name: caddy
-        state: reloaded
-
   handlers:
     - name: Reload Caddy
       systemd:
         name: caddy
-        state: reloaded
+        state: restarted
