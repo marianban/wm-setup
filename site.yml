@@ -176,6 +176,15 @@
         mode: "u=rwx,g=rwX,o="
       tags: leonafoto-sync
 
+    - name: Ensure images directory is owned by majo before rsync
+      file:
+        path: /var/www/leonafoto/images
+        state: directory
+        owner: majo
+        group: majo
+        recurse: yes
+      tags: leonafoto-sync
+
     - name: Synchronize image files (faster than copy)
       synchronize:
         src: /mnt/e/closure/leonafoto/images/
@@ -206,6 +215,15 @@
         owner: "majo"
         group: "majo"
         mode: "u=rwx,g=rwX,o="
+      tags: leonafoto-sync
+
+    - name: Ensure data directory is owned by majo before rsync
+      file:
+        path: /var/www/leonafoto/data
+        state: directory
+        owner: majo
+        group: majo
+        recurse: yes
       tags: leonafoto-sync
 
     - name: Synchronize data files (faster than copy)
