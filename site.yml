@@ -482,11 +482,19 @@
         executable: /bin/bash
 
 # Currently there seems to be a migration issue that leads to a fatal error. P3018 on the command prisma migrate deploy. This is a workaround.
+    - name: Check if migration 05_add_visit_id is already applied
+      community.mysql.mysql_query:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        login_db: umami_db
+        query: "SELECT migration_name FROM _prisma_migrations WHERE migration_name = '05_add_visit_id';"
+      register: migration_check
+
     - name: Mark Prisma migration 05_add_visit_id as applied
       shell: npx prisma migrate resolve --applied "05_add_visit_id" --schema /var/www/umami/source/db/mysql/schema.prisma
       args:
         chdir: /var/www/umami/source
       become_user: "{{ build_user }}"
+      when: migration_check.query_result[0] | length == 0
 
     - name: Build Umami frontend with Yarn
       become_user: "{{ build_user }}"
