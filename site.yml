@@ -652,7 +652,16 @@
         dest: /tmp/wb_db.sql
         mode: '0644'
 
-    - name: Import WP database
+    - name: Check if wp_actionscheduler_actions table exists
+      community.mysql.mysql_query:
+        login_user: "{{ fullstav_db_user }}"
+        login_password: "{{ fullstav_db_user_password }}"
+        login_db: "{{ fullstav_db_name }}"
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        query: "SHOW TABLES LIKE 'wp_actionscheduler_actions';"
+      register: wp_table_check
+
+    - name: Import WP database if table does not exist
       community.mysql.mysql_db:
         name: "{{ fullstav_db_name }}"
         state: import
@@ -660,6 +669,7 @@
         login_user: "{{ fullstav_db_user }}"
         login_password: "{{ fullstav_db_user_password }}"
         login_unix_socket: /var/run/mysqld/mysqld.sock
+      when: wp_table_check.query_result[0] | length == 0
 
     - name: Install WP-CLI
       get_url:
