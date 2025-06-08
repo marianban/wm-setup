@@ -19,9 +19,13 @@
         update_cache: yes
         cache_valid_time: 3600
 
-    - name: Install UFW
+    - name: Install essential packages (common)
       apt:
-        name: ufw
+        name:
+          - curl
+          - git
+          - build-essential
+          - ufw
         state: present
 
     - name: Allow SSH, HTTP, HTTPS through UFW
@@ -37,14 +41,6 @@
       ufw:
         state: enabled
         logging: on
-
-    - name: Install essential packages (common)
-      apt:
-        name:
-          - curl
-          - git
-          - build-essential
-        state: present
 
     - name: Ensure web user exists
       user:
