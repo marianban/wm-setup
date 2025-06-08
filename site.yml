@@ -709,13 +709,37 @@
         group: "{{ web_user }}"
         mode: 'u=rwX,g=rwX,o=rX'
 
-    - name: Copy May 2025 uploads from control machine
-      copy:
+    - name: Ensure uploads directory is owned by majo before rsync
+      file:
+        path: /var/www/fullstav/wp-content/uploads/2025/05
+        state: directory
+        owner: majo
+        group: majo
+        recurse: yes
+      tags: fullstav-sync
+
+    - name: Synchronize May 2025 uploads from control machine (rsync)
+      synchronize:
         src: /mnt/c/xampp/htdocs/wordpress/wp-content/uploads/2025/05/
         dest: /var/www/fullstav/wp-content/uploads/2025/05/
+        rsync_opts:
+          - "--archive"
+          - "--delete"
+        owner: no
+        group: no
+        mode: push
+      become_user: majo
+      tags: fullstav-sync
+
+    - name: Ensure uploads directory permissions (set back to web_user)
+      file:
+        path: /var/www/fullstav/wp-content/uploads/2025/05
+        state: directory
         owner: "{{ web_user }}"
         group: "{{ web_user }}"
         mode: 'u=rwX,g=rwX,o=rX'
+        recurse: yes
+      tags: fullstav-sync
 
     - name: Fix permissions on all uploaded files
       file:
