@@ -53,9 +53,9 @@
         create_home: yes
       tags: esentials
 
-    - name: Ensure majo is a member of web group
+    - name: Ensure "{{ ansible_user }}" is a member of web group
       user:
-        name: majo
+        name: "{{ ansible_user }}"
         groups: "{{ web_user }}"
         append: yes
       tags: esentials
@@ -157,7 +157,7 @@
         dest: /etc/caddy/Caddyfile
         owner: caddy
         group: caddy
-        mode: "u=rw,g=r,o="
+        mode: "u=rw,g=rw,o="
       notify: Reload Caddy
       tags: caddy
 
@@ -187,21 +187,21 @@
       become_user: "{{ build_user }}"
       tags: leonafoto
 
-    - name: Ensure images directory exists (owned by majo for rsync)
+    - name: Ensure images directory exists (owned by "{{ ansible_user }}" for rsync)
       file:
         path: /var/www/leonafoto/images
         state: directory
-        owner: majo
-        group: majo
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
         mode: "u=rwx,g=rwX,o="
       tags: leonafoto
 
-    - name: Ensure images directory is owned by majo before rsync
+    - name: Ensure images directory is owned by "{{ ansible_user }}" before rsync
       file:
         path: /var/www/leonafoto/images
         state: directory
-        owner: majo
-        group: majo
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
         recurse: yes
       tags: leonafoto
 
@@ -215,7 +215,7 @@
         owner: no
         group: no
         mode: push
-      become_user: majo
+      become_user: "{{ ansible_user }}"
       tags: leonafoto
 
     - name: Ensure images directory permissions (set back to web_user)
@@ -228,21 +228,21 @@
         recurse: yes
       tags: leonafoto
 
-    - name: Ensure data directory exists (owned by majo for rsync)
+    - name: Ensure data directory exists (owned by "{{ ansible_user }}" for rsync)
       file:
         path: /var/www/leonafoto/data
         state: directory
-        owner: "majo"
-        group: "majo"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
         mode: "u=rwx,g=rwX,o="
       tags: leonafoto
 
-    - name: Ensure data directory is owned by majo before rsync
+    - name: Ensure data directory is owned by "{{ ansible_user }}" before rsync
       file:
         path: /var/www/leonafoto/data
         state: directory
-        owner: majo
-        group: majo
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
         recurse: yes
       tags: leonafoto
 
@@ -256,7 +256,7 @@
         owner: no
         group: no
         mode: push
-      become_user: majo
+      become_user: "{{ ansible_user }}"
       tags: leonafoto
 
     - name: Ensure data directory permissions (set back to web_user)
@@ -837,12 +837,12 @@
         mode: 'u=rwX,g=rwX,o=rX'
       tags: fullstav
 
-    - name: Ensure uploads directory is owned by majo before rsync
+    - name: Ensure uploads directory is owned by "{{ ansible_user }}" before rsync
       file:
         path: /var/www/fullstav/wp-content/uploads/2025/05
         state: directory
-        owner: majo
-        group: majo
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
         recurse: yes
       tags: fullstav
 
@@ -856,7 +856,7 @@
         owner: no
         group: no
         mode: push
-      become_user: majo
+      become_user: "{{ ansible_user }}"
       tags: fullstav
 
     - name: Ensure uploads directory permissions (set back to web_user)
@@ -887,6 +887,42 @@
       become: yes
       become_user: "{{ web_user }}"
       tags: fullstav
+
+    # --- Unattended Upgrades Setup --- #
+    - name: Ensure unattended-upgrades and mailx are installed
+      apt:
+        name:
+          - unattended-upgrades
+          - apt-listchanges
+          - bsd-mailx
+        state: present
+      tags: unattended-upgrades
+
+    - name: Enable unattended-upgrades (generate default config)
+      command: dpkg-reconfigure -f noninteractive unattended-upgrades
+      tags: unattended-upgrades
+
+    - name: Copy custom 50unattended-upgrades config
+      copy:
+        src: /mnt/e/closure/50unattended-upgrades
+        dest: /etc/apt/apt.conf.d/50unattended-upgrades
+      tags: unattended-upgrades
+
+    - name: Enable periodic updates and upgrades
+      copy:
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+        content: |
+          APT::Periodic::Update-Package-Lists "1";
+          APT::Periodic::Unattended-Upgrade "1";
+      tags: unattended-upgrades
+
+    - name: Set apt-listchanges email address
+      lineinfile:
+        path: /etc/apt/listchanges.conf
+        regexp: '^email_address='
+        line: 'email_address=marian.ban@gmail.com'
+        state: present
+      tags: unattended-upgrades
 
   handlers:
     - name: Reload Caddy
