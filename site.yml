@@ -18,6 +18,7 @@
       apt:
         update_cache: yes
         cache_valid_time: 3600
+      tags: esentials
 
     - name: Install essential packages (common)
       apt:
@@ -27,6 +28,7 @@
           - build-essential
           - ufw
         state: present
+      tags: esentials
 
     - name: Allow SSH, HTTP, HTTPS through UFW
       ufw:
@@ -36,11 +38,13 @@
         - ssh
         - http
         - https
+      tags: esentials
 
     - name: Enable UFW
       ufw:
         state: enabled
         logging: on
+      tags: esentials
 
     - name: Ensure web user exists
       user:
@@ -54,7 +58,7 @@
         name: majo
         groups: "{{ web_user }}"
         append: yes
-      tags: leonafoto-sync
+      tags: esentials
 
     - name: Ensure build user exists with password
       user:
@@ -64,6 +68,7 @@
         groups: "{{ web_user }}"
         append: yes
         password: "{{ build_user_password | password_hash('sha512') }}"
+      tags: esentials
 
     - name: Ensure /var/www exists with group=web and setgid
       file:
@@ -72,24 +77,34 @@
         owner: root
         group: "{{ web_user }}"
         mode: "u=rwx,g=rwx,o=rx,g+s"
+      tags: esentials
 
     # --- Node.js/PM2 section ---
     - name: Bootstrap NodeSource setup script (Node.js 22.x)
       shell: curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       args:
         executable: /bin/bash
+      tags: nodejs
 
     - name: Install Node.js (Node.js/PM2 section)
       apt:
         name:
           - nodejs
         state: present
+      tags: nodejs
 
     - name: Install PM2 globally
       npm:
         name: pm2
         global: yes
         executable: /usr/bin/npm
+      tags: nodejs
+
+    - name: Bootstrap PM2 startup for web user
+      shell: pm2 startup systemd -u {{ web_user }} --hp /home/{{ web_user }}
+      args:
+        creates: "/etc/systemd/system/pm2-{{ web_user }}.service"
+      tags: nodejs
 
     # --- Caddy section ---
     - name: Install Caddy prerequisites
@@ -99,27 +114,32 @@
           - debian-archive-keyring
           - apt-transport-https
         state: present
+      tags: caddy
 
     - name: Add Caddy GPG key to keyring
       apt_key:
         url: https://dl.cloudsmith.io/public/caddy/stable/gpg.key
         keyring: /usr/share/keyrings/caddy-stable-archive-keyring.gpg
         state: present
+      tags: caddy
 
     - name: Add Caddy APT repository
       get_url:
         url: https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt
         dest: /etc/apt/sources.list.d/caddy-stable.list
         mode: '0644'
+      tags: caddy
 
     - name: Update apt cache after adding Caddy repo
       apt:
         update_cache: yes
+      tags: caddy
 
     - name: Install Caddy
       apt:
         name: caddy
         state: present
+      tags: caddy
 
     - name: Ensure /etc/caddy directory exists
       file:
@@ -128,6 +148,7 @@
         owner: caddy
         group: caddy
         mode: "u=rwx,g=rx,o=rx"
+      tags: caddy
 
     - name: Deploy Caddyfile
       tags: caddyfile
@@ -138,23 +159,21 @@
         group: caddy
         mode: "u=rw,g=r,o="
       notify: Reload Caddy
+      tags: caddy
 
     - name: Ensure Caddy is enabled & running
       systemd:
         name: caddy
         state: started
         enabled: yes
+      tags: caddy
 
     - name: Add caddy user to web group
       user:
         name: caddy
         groups: "{{ web_user }}"
         append: yes
-
-    - name: Bootstrap PM2 startup for web user
-      shell: pm2 startup systemd -u {{ web_user }} --hp /home/{{ web_user }}
-      args:
-        creates: "/etc/systemd/system/pm2-{{ web_user }}.service"
+      tags: caddy
 
     # ——————— leonafoto website setup ——————— #
     - name: Pull or update leonafoto repo as build user
@@ -166,6 +185,7 @@
         force: yes
         accept_hostkey: yes
       become_user: "{{ build_user }}"
+      tags: leonafoto
 
     - name: Ensure images directory exists (owned by majo for rsync)
       file:
@@ -174,7 +194,7 @@
         owner: majo
         group: majo
         mode: "u=rwx,g=rwX,o="
-      tags: leonafoto-sync
+      tags: leonafoto
 
     - name: Ensure images directory is owned by majo before rsync
       file:
@@ -183,7 +203,7 @@
         owner: majo
         group: majo
         recurse: yes
-      tags: leonafoto-sync
+      tags: leonafoto
 
     - name: Synchronize image files (faster than copy)
       synchronize:
@@ -196,7 +216,7 @@
         group: no
         mode: push
       become_user: majo
-      tags: leonafoto-sync
+      tags: leonafoto
 
     - name: Ensure images directory permissions (set back to web_user)
       file:
@@ -206,7 +226,7 @@
         group: "{{ web_user }}"
         mode: "u=rwx,g=rwX,o="
         recurse: yes
-      tags: leonafoto-sync
+      tags: leonafoto
 
     - name: Ensure data directory exists (owned by majo for rsync)
       file:
@@ -215,7 +235,7 @@
         owner: "majo"
         group: "majo"
         mode: "u=rwx,g=rwX,o="
-      tags: leonafoto-sync
+      tags: leonafoto
 
     - name: Ensure data directory is owned by majo before rsync
       file:
@@ -224,7 +244,7 @@
         owner: majo
         group: majo
         recurse: yes
-      tags: leonafoto-sync
+      tags: leonafoto
 
     - name: Synchronize data files (faster than copy)
       synchronize:
@@ -237,7 +257,7 @@
         group: no
         mode: push
       become_user: majo
-      tags: leonafoto-sync
+      tags: leonafoto
 
     - name: Ensure data directory permissions (set back to web_user)
       file:
@@ -247,14 +267,7 @@
         group: "{{ web_user }}"
         mode: "u=rwx,g=rwX,o="
         recurse: yes
-      tags: leonafoto-sync
-
-    - name: Ensure majo is a member of web group
-      user:
-        name: majo
-        groups: "{{ web_user }}"
-        append: yes
-      tags: esentials
+      tags: leonafoto
 
     - name: Copy environment file
       copy:
@@ -263,40 +276,70 @@
         owner: "{{ build_user }}"
         group: "{{ web_user }}"
         mode: "u=rw,g=rw,o="
+      tags: leonafoto
 
     - name: Install npm dependencies for leonafoto
       command: npm install
       args:
         chdir: /var/www/leonafoto/source/web
       become_user: "{{ build_user }}"
+      tags: leonafoto
 
     - name: Run npm build for leonafoto
       command: npm run build
       args:
         chdir: /var/www/leonafoto/source/web
       become_user: "{{ build_user }}"
+      tags: leonafoto
 
-    - name: Start leonafoto app with PM2
-      shell: pm2 start npm --name leonafoto -- start
+    - name: Render leonafoto PM2 ecosystem file
+      copy:
+        dest: /var/www/leonafoto/source/web/ecosystem.config.js
+        content: |
+          module.exports = {
+            apps: [
+              {
+                name: 'leonafoto',
+                script: 'npm',
+                args: 'start',
+                cwd: '/var/www/leonafoto/source/web',
+                interpreter: 'none',
+                env: {},
+              },
+            ],
+          };
+        owner: "{{ web_user }}"
+        group: "{{ web_user }}"
+        mode: '0644'
+      tags: leonafoto
+
+    - name: Start or reload leonafoto app with PM2 ecosystem
+      shell: pm2 startOrReload ecosystem.config.js --env production
       args:
         chdir: /var/www/leonafoto/source/web
       become_user: "{{ web_user }}"
+      tags: leonafoto
 
-    - name: Save PM2 process list
+    - name: Save PM2 process list (leonafoto)
       shell: pm2 save
+      args:
+        chdir: /var/www/leonafoto/source/web
       become_user: "{{ web_user }}"
+      tags: leonafoto
 
     # ——————— Monitorix installation ——————— #
     - name: Install Monitorix
       apt:
         name: monitorix
         state: present
+      tags: monitorix
 
     - name: Ensure Monitorix service is enabled & running
       systemd:
         name: monitorix
         state: started
         enabled: yes
+      tags: monitorix
 
     # ——————— Slick UI Demos installation ——————— #
     - name: Pull git-repo-auto-publish repo as build user
@@ -308,6 +351,7 @@
         force: yes
         accept_hostkey: yes
       become_user: "{{ build_user }}"
+      tags: slick-ui-demos
 
     - name: Copy script.sh into remote git-repo-auto-publish directory
       copy:
@@ -315,6 +359,7 @@
         dest: "/home/{{ build_user }}/script.sh"
         owner: "{{ build_user }}"
         mode: "u=rwx,go=rx"
+      tags: slick-ui-demos
 
     - name: Copy cronjob.env.sh into remote ~/ directory
       copy:
@@ -322,6 +367,7 @@
         dest: "/home/{{ build_user }}/cronjob.env.sh"
         owner: "{{ build_user }}"
         mode: "u=rwx,go=rx"
+      tags: slick-ui-demos
 
     - name: Copy .env into remote git-repo-auto-publish directory
       copy:
@@ -329,6 +375,7 @@
         dest: "/home/{{ build_user }}/files/git-repo-auto-publish/.env"
         owner: "{{ build_user }}"
         mode: "u=rw,go=r"
+      tags: slick-ui-demos
 
     - name: Install NodeGit & Python build dependencies (Slick UI Demos)
       apt:
@@ -339,6 +386,7 @@
           - libcurl4-openssl-dev
           - python-is-python3
         state: present
+      tags: slick-ui-demos
 
     - name: Install NVM and Node 22 for build user
       become_user: "{{ build_user }}"
@@ -353,6 +401,7 @@
       args:
         executable: /bin/bash
         creates: "/home/{{ build_user }}/.nvm"
+      tags: slick-ui-demos
 
     - name: Ensure NVM is loaded in build user’s shell
       become_user: "{{ build_user }}"
@@ -360,12 +409,14 @@
         path: "/home/{{ build_user }}/.bashrc"
         create: yes
         line: 'export NVM_DIR="$HOME/.nvm"'
+      tags: slick-ui-demos
 
     - name: Add NVM source to build user’s shell
       become_user: "{{ build_user }}"
       lineinfile:
         path: "/home/{{ build_user }}/.bashrc"
         line: '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"'
+      tags: slick-ui-demos
 
     - name: Install npm dependencies for git-repo-auto-publish with Node 22
       become_user: "{{ build_user }}"
@@ -377,6 +428,7 @@
       args:
         executable: /bin/bash
         chdir: "/home/{{ build_user }}/files/git-repo-auto-publish"
+      tags: slick-ui-demos
 
     - name: Pull slick-ui-demos repo as build user
       git:
@@ -387,6 +439,7 @@
         force: yes
         accept_hostkey: yes
       become_user: "{{ build_user }}"
+      tags: slick-ui-demos
 
     - name: Setup auto-publish cron for build user
       cron:
@@ -396,27 +449,32 @@
         job: 'bash -lc ". ~/cronjob.env.sh >> ~/cronjob.log 2>&1; nvm use 22 1> ~/nvmuse.log; ~/script.sh >> ~/auto-publish.log 2>&1; kill $SSH_AGENT_PID"'
       environment:
         HOME: "/home/{{ build_user }}"
+      tags: slick-ui-demos
 
     # ——————— MariaDB Installation ——————— #
     - name: Install PyMySQL for Ansible’s mysql modules (MariaDB)
       apt:
         name: python3-pymysql
         state: present
+      tags: mariadb
 
     - name: Download MariaDB repo setup script
       get_url:
         url: https://downloads.mariadb.com/MariaDB/mariadb_repo_setup
         dest: /usr/local/bin/mariadb_repo_setup
         mode: '0755'
+      tags: mariadb
 
     - name: Configure MariaDB APT repository
       shell: /usr/local/bin/mariadb_repo_setup
       args:
         creates: /etc/apt/sources.list.d/mariadb.list
+      tags: mariadb
 
     - name: Update apt cache after adding MariaDB repo
       apt:
         update_cache: yes
+      tags: mariadb
 
     - name: Install MariaDB server and client
       apt:
@@ -424,12 +482,14 @@
           - mariadb-server
           - mariadb-client
         state: present
+      tags: mariadb
 
     - name: Ensure MariaDB service is enabled & running
       systemd:
         name: mariadb
         state: started
         enabled: yes
+      tags: mariadb
 
     # ——————— Umami installation ——————— #
     - name: Pull Umami v2.18.1 as build user
@@ -441,6 +501,7 @@
         force: yes
         accept_hostkey: yes
       become_user: "{{ build_user }}"
+      tags: umami
 
     - name: Create umami_db database
       community.mysql.mysql_db:
@@ -448,6 +509,7 @@
         state: present
         check_implicit_admin: yes
         login_unix_socket: /var/run/mysqld/mysqld.sock
+      tags: umami
 
     - name: Create umami_db_user with admin access to umami_db
       community.mysql.mysql_user:
@@ -458,6 +520,7 @@
         state: present
         check_implicit_admin: yes
         login_unix_socket: /var/run/mysqld/mysqld.sock
+      tags: umami
 
     - name: Render Umami environment file
       template:
@@ -466,11 +529,13 @@
         owner: "{{ build_user }}"
         group: "{{ web_user }}"
         mode: "u=rw,g=r,o="
+      tags: umami
 
     - name: Install Yarn globally
       npm:
         name: yarn
         global: yes
+      tags: umami
 
     - name: Install Umami dependencies with Yarn (increased timeouts)
       become_user: "{{ build_user }}"
@@ -480,21 +545,34 @@
       args:
         chdir: /var/www/umami/source
         executable: /bin/bash
+      tags: umami
 
 # Currently there seems to be a migration issue that leads to a fatal error. P3018 on the command prisma migrate deploy. This is a workaround.
+    - name: Check if _prisma_migrations table exists
+      community.mysql.mysql_query:
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        login_db: umami_db
+        query: "SHOW TABLES LIKE '_prisma_migrations';"
+      register: prisma_migrations_table
+      tags: umami
+
     - name: Check if migration 05_add_visit_id is already applied
       community.mysql.mysql_query:
         login_unix_socket: /var/run/mysqld/mysqld.sock
         login_db: umami_db
         query: "SELECT migration_name FROM _prisma_migrations WHERE migration_name = '05_add_visit_id';"
       register: migration_check
+      when: prisma_migrations_table.query_result[0] | length > 0
+      tags: umami
 
     - name: Mark Prisma migration 05_add_visit_id as applied
       shell: npx prisma migrate resolve --applied "05_add_visit_id" --schema /var/www/umami/source/db/mysql/schema.prisma
       args:
         chdir: /var/www/umami/source
       become_user: "{{ build_user }}"
-      when: migration_check.query_result[0] | length == 0
+      when:
+        - migration_check is not defined or (migration_check.query_result[0] | default([])) | length == 0
+      tags: umami
 
     - name: Build Umami frontend with Yarn
       become_user: "{{ build_user }}"
@@ -502,16 +580,42 @@
       args:
         chdir: /var/www/umami/source
         executable: /bin/bash
+      tags: umami
 
-    - name: Start Umami app with PM2
-      shell: pm2 start yarn --name umami -- start-env
+    - name: Render Umami PM2 ecosystem file
+      copy:
+        dest: /var/www/umami/source/ecosystem.config.js
+        content: |
+          module.exports = {
+            apps: [
+              {
+                name: 'umami',
+                script: 'yarn',
+                args: 'start-env',
+                cwd: '/var/www/umami/source',
+                interpreter: 'none',
+                env: {},
+              },
+            ],
+          };
+        owner: "{{ web_user }}"
+        group: "{{ web_user }}"
+        mode: '0644'
+      tags: umami
+
+    - name: Start or reload Umami app with PM2 ecosystem
+      shell: pm2 startOrReload ecosystem.config.js --env production
       args:
         chdir: /var/www/umami/source
       become_user: "{{ web_user }}"
+      tags: umami
 
-    - name: Save PM2 process list
+    - name: Save PM2 process list (umami)
       shell: pm2 save
+      args:
+        chdir: /var/www/umami/source
       become_user: "{{ web_user }}"
+      tags: umami
 
     # ——————— fullstav (WordPress/PHP⟶Caddy) site setup ——————— #
 
@@ -523,11 +627,13 @@
           - ca-certificates
           - lsb-release
         state: present
+      tags: fullstav
 
     - name: Add Ondřej Surý’s PHP PPA
       apt_repository:
         repo: ppa:ondrej/php
         state: present
+      tags: fullstav
 
     - name: Install PHP 8.2 FPM & extensions (WordPress/PHP)
       apt:
@@ -545,6 +651,7 @@
           - less
           - mariadb-client
         state: present
+      tags: fullstav
 
     - name: Ensure PHP‐FPM pool runs as {{ web_user }}:{{ web_user }}
       lineinfile:
@@ -552,6 +659,7 @@
         regexp: '^(user\s*=\s*).*'
         line: "user = {{ web_user }}"
         backup: yes
+      tags: fullstav
 
     - name: Set PHP‐FPM pool group to {{ web_user }}
       lineinfile:
@@ -559,6 +667,7 @@
         regexp: '^(group\s*=\s*).*'
         line: "group = {{ web_user }}"
         backup: yes
+      tags: fullstav
 
     - name: Make PHP‐FPM socket owned by {{ web_user }}:{{ web_user }}
       lineinfile:
@@ -566,6 +675,7 @@
         regexp: '^(;?\s*listen\.owner\s*=\s*).*'
         line: "listen.owner = {{ web_user }}"
         backup: yes
+      tags: fullstav
 
     - name: Make PHP‐FPM socket group {{ web_user }}
       lineinfile:
@@ -573,6 +683,7 @@
         regexp: '^(;?\s*listen\.group\s*=\s*).*'
         line: "listen.group = {{ web_user }}"
         backup: yes
+      tags: fullstav
 
     - name: Ensure PHP-FPM socket is group-writable (0660)
       lineinfile:
@@ -580,6 +691,7 @@
         regexp: '^(;?\s*listen\.mode\s*=).*'
         line: "listen.mode = 0660"
         backup: yes
+      tags: fullstav
 
     - name: Restart php8.2-fpm to apply pool changes
       systemd:
@@ -587,6 +699,7 @@
         state: restarted
         enabled: yes
       notify: Reload Caddy
+      tags: fullstav
 
     - name: Ensure /var/www/fullstav exists with group=web and setgid
       file:
@@ -595,12 +708,14 @@
         owner: root
         group: "{{ web_user }}"
         mode: "u=rwx,g=rwx,o=rx,g+s"
+      tags: fullstav
 
     - name: Download WordPress 6.8.1 archive
       get_url:
         url: https://wordpress.org/wordpress-6.8.1.tar.gz
         dest: /tmp/wordpress-6.8.1.tar.gz
         mode: '0644'
+      tags: fullstav
 
     - name: Extract WordPress into site directory (flattened)
       unarchive:
@@ -609,6 +724,7 @@
         remote_src: yes
         extra_opts: ['--strip-components=1']
         creates: /var/www/fullstav/wp-admin
+      tags: fullstav
 
     # - name: Test index.php
     #   become_user: "{{ web_user }}"
@@ -623,6 +739,7 @@
         recurse: yes
         owner: "{{ web_user }}"
         group: "{{ web_user }}"
+      tags: fullstav
 
     - name: Render wp-config.php
       template:
@@ -631,12 +748,14 @@
         owner: "{{ web_user }}"
         group: "{{ web_user }}"
         mode: '0644'
+      tags: fullstav
 
     - name: Create fullstav database
       community.mysql.mysql_db:
         name: "{{ fullstav_db_name}}"
         state: present
         login_unix_socket: /var/run/mysqld/mysqld.sock
+      tags: fullstav
 
     - name: Create fullstav DB user
       community.mysql.mysql_user:
@@ -645,12 +764,14 @@
         priv: "{{ fullstav_db_name }}.*:ALL"
         state: present
         login_unix_socket: /var/run/mysqld/mysqld.sock
+      tags: fullstav
 
     - name: Copy WP database dump to remote host
       copy:
         src: /mnt/e/closure/fulstav/wb_db.sql
         dest: /tmp/wb_db.sql
         mode: '0644'
+      tags: fullstav
 
     - name: Check if wp_actionscheduler_actions table exists
       community.mysql.mysql_query:
@@ -660,6 +781,7 @@
         login_unix_socket: /var/run/mysqld/mysqld.sock
         query: "SHOW TABLES LIKE 'wp_actionscheduler_actions';"
       register: wp_table_check
+      tags: fullstav
 
     - name: Import WP database if table does not exist
       community.mysql.mysql_db:
@@ -670,12 +792,14 @@
         login_password: "{{ fullstav_db_user_password }}"
         login_unix_socket: /var/run/mysqld/mysqld.sock
       when: wp_table_check.query_result[0] | length == 0
+      tags: fullstav
 
     - name: Install WP-CLI
       get_url:
         url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
         dest: /usr/local/bin/wp
         mode: '0755'
+      tags: fullstav
 
     - name: Install & activate Neve theme v4.0.1
       command: >
@@ -684,6 +808,7 @@
         chdir: /var/www/fullstav
       become: yes
       become_user: "{{ web_user }}"
+      tags: fullstav
 
     - name: Install & activate Otter Page Builder Blocks v3.0.11
       command: >
@@ -692,6 +817,7 @@
         chdir: /var/www/fullstav
       become: yes
       become_user: "{{ web_user }}"
+      tags: fullstav
 
     - name: Ensure wp-content/uploads is present and group‐writable
       file:
@@ -700,6 +826,7 @@
         owner: "{{ web_user }}"
         group: "{{ web_user }}"
         mode: "u=rwX,g=rwX,o=rX,g+s"
+      tags: fullstav
 
     - name: Ensure destination uploads directory exists
       file:
@@ -708,6 +835,7 @@
         owner: "{{ web_user }}"
         group: "{{ web_user }}"
         mode: 'u=rwX,g=rwX,o=rX'
+      tags: fullstav
 
     - name: Ensure uploads directory is owned by majo before rsync
       file:
@@ -716,7 +844,7 @@
         owner: majo
         group: majo
         recurse: yes
-      tags: fullstav-sync
+      tags: fullstav
 
     - name: Synchronize May 2025 uploads from control machine (rsync)
       synchronize:
@@ -729,7 +857,7 @@
         group: no
         mode: push
       become_user: majo
-      tags: fullstav-sync
+      tags: fullstav
 
     - name: Ensure uploads directory permissions (set back to web_user)
       file:
@@ -739,7 +867,7 @@
         group: "{{ web_user }}"
         mode: 'u=rwX,g=rwX,o=rX'
         recurse: yes
-      tags: fullstav-sync
+      tags: fullstav
 
     - name: Fix permissions on all uploaded files
       file:
@@ -747,6 +875,7 @@
         owner: "{{ web_user }}"
         group: "{{ web_user }}"
         mode: 'u=rwX,g=rwX,o=rX'
+      tags: fullstav
 
     - name: Clone fullstav theme into WordPress
       git:
@@ -757,6 +886,7 @@
         accept_hostkey: yes
       become: yes
       become_user: "{{ web_user }}"
+      tags: fullstav
 
   handlers:
     - name: Reload Caddy
