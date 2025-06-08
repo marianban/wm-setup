@@ -451,6 +451,12 @@
         HOME: "/home/{{ build_user }}"
       tags: slick-ui-demos
 
+    - name: Copy logrotate config for autopublish
+      copy:
+        src: /mnt/e/closure/autopublish.conf
+        dest: /etc/logrotate.d/autopublish
+      tags: slick-ui-demos
+
     # ——————— MariaDB Installation ——————— #
     - name: Install PyMySQL for Ansible’s mysql modules (MariaDB)
       apt:
