@@ -13,6 +13,7 @@
     - vault.yml
 
   tasks:
+    # --- Common system packages ---
     - name: Refresh apt cache
       apt:
         update_cache: yes
@@ -37,7 +38,7 @@
         state: enabled
         logging: on
 
-    - name: Install essential packages
+    - name: Install essential packages (common)
       apt:
         name:
           - curl
@@ -68,16 +69,16 @@
         group: "{{ web_user }}"
         mode: "u=rwx,g=rwx,o=rx,g+s"
 
+    # --- Node.js/PM2 section ---
     - name: Bootstrap NodeSource setup script (Node.js 22.x)
       shell: curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
       args:
         executable: /bin/bash
 
-    - name: Install Node.js & build-essential
+    - name: Install Node.js (Node.js/PM2 section)
       apt:
         name:
           - nodejs
-          - build-essential
         state: present
 
     - name: Install PM2 globally
@@ -86,6 +87,7 @@
         global: yes
         executable: /usr/bin/npm
 
+    # --- Caddy section ---
     - name: Install Caddy prerequisites
       apt:
         name:
@@ -269,10 +271,9 @@
         owner: "{{ build_user }}"
         mode: "u=rw,go=r"
 
-    - name: Install NodeGit & Python build dependencies
+    - name: Install NodeGit & Python build dependencies (Slick UI Demos)
       apt:
         name:
-          - build-essential
           - pkg-config
           - libssl-dev
           - libkrb5-dev
@@ -338,7 +339,7 @@
         HOME: "/home/{{ build_user }}"
 
     # ——————— MariaDB Installation ——————— #
-    - name: Install PyMySQL for Ansible’s mysql modules
+    - name: Install PyMySQL for Ansible’s mysql modules (MariaDB)
       apt:
         name: python3-pymysql
         state: present
@@ -447,7 +448,7 @@
 
     # ——————— fullstav (WordPress/PHP⟶Caddy) site setup ——————— #
 
-    - name: Install prerequisites for adding PPAs
+    - name: Install prerequisites for adding PPAs (WordPress/PHP)
       apt:
         name:
           - software-properties-common
@@ -461,7 +462,7 @@
         repo: ppa:ondrej/php
         state: present
 
-    - name: Install PHP 8.2 FPM & extensions
+    - name: Install PHP 8.2 FPM & extensions (WordPress/PHP)
       apt:
         name:
           - php8.2-fpm
