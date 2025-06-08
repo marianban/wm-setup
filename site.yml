@@ -47,6 +47,14 @@
         name: "{{ web_user }}"
         shell: /usr/sbin/nologin
         create_home: yes
+      tags: esentials
+
+    - name: Ensure majo is a member of web group
+      user:
+        name: majo
+        groups: "{{ web_user }}"
+        append: yes
+      tags: leonafoto-sync
 
     - name: Ensure build user exists with password
       user:
@@ -159,39 +167,76 @@
         accept_hostkey: yes
       become_user: "{{ build_user }}"
 
-    - name: Ensure images directory exists
+    - name: Ensure images directory exists (owned by majo for rsync)
+      file:
+        path: /var/www/leonafoto/images
+        state: directory
+        owner: majo
+        group: majo
+        mode: "u=rwx,g=rwX,o="
+      tags: leonafoto-sync
+
+    - name: Synchronize image files (faster than copy)
+      synchronize:
+        src: /mnt/e/closure/leonafoto/images/
+        dest: /var/www/leonafoto/images/
+        rsync_opts:
+          - "--archive"
+          - "--delete"
+        owner: no
+        group: no
+        mode: push
+      become_user: majo
+      tags: leonafoto-sync
+
+    - name: Ensure images directory permissions (set back to web_user)
       file:
         path: /var/www/leonafoto/images
         state: directory
         owner: "{{ web_user }}"
         group: "{{ web_user }}"
         mode: "u=rwx,g=rwX,o="
+        recurse: yes
+      tags: leonafoto-sync
 
-    - name: Copy image files
-      copy:
-        src: "{{ item }}"
-        dest: /var/www/leonafoto/images/
-        owner: "{{ web_user }}"
-        group: "{{ web_user }}"
+    - name: Ensure data directory exists (owned by majo for rsync)
+      file:
+        path: /var/www/leonafoto/data
+        state: directory
+        owner: "majo"
+        group: "majo"
         mode: "u=rwx,g=rwX,o="
-      loop: "{{ lookup('fileglob','/mnt/e/closure/leonafoto/images/*',wantlist=True) }}"
+      tags: leonafoto-sync
 
-    - name: Ensure data directory exists
+    - name: Synchronize data files (faster than copy)
+      synchronize:
+        src: /mnt/e/closure/leonafoto/data/
+        dest: /var/www/leonafoto/data/
+        rsync_opts:
+          - "--archive"
+          - "--delete"
+        owner: no
+        group: no
+        mode: push
+      become_user: majo
+      tags: leonafoto-sync
+
+    - name: Ensure data directory permissions (set back to web_user)
       file:
         path: /var/www/leonafoto/data
         state: directory
         owner: "{{ web_user }}"
         group: "{{ web_user }}"
         mode: "u=rwx,g=rwX,o="
+        recurse: yes
+      tags: leonafoto-sync
 
-    - name: Copy data files
-      copy:
-        src: "{{ item }}"
-        dest: /var/www/leonafoto/data/
-        owner: "{{ web_user }}"
-        group: "{{ web_user }}"
-        mode: "u=rwx,g=rwX,o="
-      loop: "{{ lookup('fileglob','/mnt/e/closure/leonafoto/data/*',wantlist=True) }}"
+    - name: Ensure majo is a member of web group
+      user:
+        name: majo
+        groups: "{{ web_user }}"
+        append: yes
+      tags: esentials
 
     - name: Copy environment file
       copy:
