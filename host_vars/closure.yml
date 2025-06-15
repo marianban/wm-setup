@@ -1,0 +1,8 @@
+ansible_become: true
+
+leonafoto_url: "https://leonafoto.sk"
+leonafoto_www_url: "www.leonafoto.sk"
+monitorix_url: "https://monitorix.closure.sk"
+umami_url: "https://umami.closure.sk"
+demos_url: "https://demos.closure.sk"
+fullstav_url: "https://fullstav.closure.sk"

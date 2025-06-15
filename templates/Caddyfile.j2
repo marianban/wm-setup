@@ -28,9 +28,11 @@
   redir {{ leonafoto_url }}{uri} permanent
 }
 
+{#
 {{ monitorix_url }} {
   reverse_proxy localhost:8080
 }
+#}
 
 {{ umami_url }} {
   reverse_proxy localhost:3001

@@ -13,6 +13,43 @@
     - vault.yml
 
   tasks:
+    - name: Check if swapfile exists
+      stat:
+        path: /swapfile
+      register: swapfile_stat
+      tags: swap
+
+    - name: Create swapfile if not present
+      command: fallocate -l 2G /swapfile
+      when: not swapfile_stat.stat.exists
+      tags: swap
+
+    - name: Set permissions on swapfile
+      file:
+        path: /swapfile
+        mode: '0600'
+      when: not swapfile_stat.stat.exists
+      tags: swap
+
+    - name: Format swapfile
+      command: mkswap /swapfile
+      when: not swapfile_stat.stat.exists
+      tags: swap
+
+    - name: Enable swapfile
+      command: swapon /swapfile
+      when: not swapfile_stat.stat.exists
+      tags: swap
+
+    - name: Ensure swapfile entry in /etc/fstab
+      mount:
+        name: none
+        src: /swapfile
+        fstype: swap
+        opts: sw
+        state: present
+      tags: swap
+
     # --- Common system packages ---
     - name: Refresh apt cache
       apt:
@@ -336,18 +373,18 @@
       tags: leonafoto
 
     # ——————— Monitorix installation ——————— #
-    - name: Install Monitorix
-      apt:
-        name: monitorix
-        state: present
-      tags: monitorix
+    # - name: Install Monitorix
+    #   apt:
+    #     name: monitorix
+    #     state: present
+    #   tags: monitorix
 
-    - name: Ensure Monitorix service is enabled & running
-      systemd:
-        name: monitorix
-        state: started
-        enabled: yes
-      tags: monitorix
+    # - name: Ensure Monitorix service is enabled & running
+    #   systemd:
+    #     name: monitorix
+    #     state: started
+    #     enabled: yes
+    #   tags: monitorix
 
     # ——————— Slick UI Demos installation ——————— #
     - name: Pull git-repo-auto-publish repo as build user
