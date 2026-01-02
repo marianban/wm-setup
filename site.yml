@@ -63,17 +63,23 @@
           - curl
           - git
           - build-essential
+        state: present
+      tags: esentials
+
+    - name: Install packages (ufw/fail2ban)
+      apt:
+        name:
           - ufw
           - fail2ban
         state: present
-      tags: esentials
+      tags: ufw
 
     - name: Ensure fail2ban service is enabled
       systemd:
         name: fail2ban
         enabled: yes
         state: started
-      tags: esentials
+      tags: ufw
 
     - name: Allow SSH, HTTP, HTTPS through UFW
       ufw:
@@ -83,13 +89,13 @@
         - ssh
         - http
         - https
-      tags: esentials
+      tags: ufw
 
     - name: Enable UFW
       ufw:
         state: enabled
         logging: on
-      tags: esentials
+      tags: ufw
 
     - name: Ensure web user exists
       user:
@@ -252,7 +258,7 @@
 
     - name: Synchronize image files (faster than copy)
       synchronize:
-        src: /mnt/e/closure/leonafoto/images/
+        src: /Users/marianban/src/personal/closurefiles/leonafoto/images/
         dest: /var/www/leonafoto/images/
         rsync_opts:
           - "--archive"
@@ -293,7 +299,7 @@
 
     - name: Synchronize data files (faster than copy)
       synchronize:
-        src: /mnt/e/closure/leonafoto/data/
+        src: /Users/marianban/src/personal/closurefiles/leonafoto/data/
         dest: /var/www/leonafoto/data/
         rsync_opts:
           - "--archive"
@@ -316,7 +322,7 @@
 
     - name: Copy environment file
       copy:
-        src: /mnt/e/closure/leonafoto/.env.local
+        src: /Users/marianban/src/personal/closurefiles/leonafoto/.env.local
         dest: /var/www/leonafoto/source/web/.env.local
         owner: "{{ build_user }}"
         group: "{{ web_user }}"
@@ -498,7 +504,7 @@
 
     - name: Copy logrotate config for autopublish
       copy:
-        src: /mnt/e/closure/autopublish.conf
+        src: /Users/marianban/src/personal/closurefiles/autopublish.conf
         dest: /etc/logrotate.d/autopublish
       tags: slick-ui-demos
 
@@ -827,7 +833,7 @@
 
     - name: Copy WP database dump to remote host
       copy:
-        src: /mnt/e/closure/fulstav/wb_db.sql
+        src: /Users/marianban/src/personal/closurefiles/fullstav/wb_db.sql
         dest: /tmp/wb_db.sql
         mode: '0644'
       tags: fullstav
@@ -907,7 +913,7 @@
 
     - name: Synchronize May 2025 uploads from control machine (rsync)
       synchronize:
-        src: /mnt/c/xampp/htdocs/wordpress/wp-content/uploads/2025/05/
+        src: /Users/marianban/src/personal/closurefiles/fullstav/uploads/
         dest: /var/www/fullstav/wp-content/uploads/2025/05/
         rsync_opts:
           - "--archive"
@@ -970,7 +976,7 @@
 
     - name: Copy custom 50unattended-upgrades config
       copy:
-        src: /mnt/e/closure/50unattended-upgrades
+        src: /Users/marianban/src/personal/closurefiles/50unattended-upgrades
         dest: /etc/apt/apt.conf.d/50unattended-upgrades
       tags: unattended-upgrades
 

@@ -10,6 +10,8 @@
 
 
 {{ leonafoto_url }} {
+  tls internal
+
   route /gallery/* {
     uri strip_prefix /gallery
     file_server {
@@ -35,10 +37,13 @@
 #}
 
 {{ umami_url }} {
+  tls internal
   reverse_proxy localhost:3001
 }
 
 {{ demos_url }} {
+   tls internal
+
    root * /var/www/slick-ui-demos/source
    file_server {
       browse
@@ -51,6 +56,7 @@
 }
 
 {{ fullstav_url }} {
+  tls internal
   root * /var/www/fullstav
   file_server
   php_fastcgi unix//run/php/php8.2-fpm.sock
