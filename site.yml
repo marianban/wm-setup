@@ -17,6 +17,7 @@
       stat:
         path: /swapfile
       register: swapfile_stat
+      changed_when: false
       tags: swap
 
     - name: Create swapfile if not present
@@ -619,6 +620,7 @@
         login_db: umami_db
         query: "SHOW TABLES LIKE '_prisma_migrations';"
       register: prisma_migrations_table
+      changed_when: false
       tags: umami
 
     - name: Check if migration 05_add_visit_id is already applied
@@ -628,6 +630,7 @@
         query: "SELECT migration_name FROM _prisma_migrations WHERE migration_name = '05_add_visit_id';"
       register: migration_check
       when: prisma_migrations_table.query_result[0] | length > 0
+      changed_when: false
       tags: umami
 
     - name: Mark Prisma migration 05_add_visit_id as applied
@@ -846,6 +849,7 @@
         login_unix_socket: /var/run/mysqld/mysqld.sock
         query: "SHOW TABLES LIKE 'wp_actionscheduler_actions';"
       register: wp_table_check
+      changed_when: false
       tags: fullstav
 
     - name: Import WP database if table does not exist
@@ -995,6 +999,13 @@
         line: 'email_address=marian.ban@gmail.com'
         state: present
       tags: unattended-upgrades
+
+    # --- Maintenance --- #
+    - name: Upgrade all apt packages
+      apt:
+        upgrade: dist
+        update_cache: yes
+      tags: maintenance
 
   handlers:
     - name: Reload Caddy
