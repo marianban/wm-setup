@@ -56,7 +56,7 @@
       apt:
         update_cache: yes
         cache_valid_time: 3600
-      tags: esentials
+      tags: essentials
 
     - name: Install essential packages (common)
       apt:
@@ -65,7 +65,7 @@
           - git
           - build-essential
         state: present
-      tags: esentials
+      tags: essentials
 
     - name: Install packages (ufw/fail2ban)
       apt:
@@ -103,14 +103,14 @@
         name: "{{ web_user }}"
         shell: /usr/sbin/nologin
         create_home: yes
-      tags: esentials
+      tags: essentials
 
     - name: Ensure "{{ ansible_user }}" is a member of web group
       user:
         name: "{{ ansible_user }}"
         groups: "{{ web_user }}"
         append: yes
-      tags: esentials
+      tags: essentials
 
     - name: Ensure build user exists with password
       user:
@@ -120,7 +120,7 @@
         groups: "{{ web_user }}"
         append: yes
         password: "{{ build_user_password | password_hash('sha512') }}"
-      tags: esentials
+      tags: essentials
 
     - name: Ensure /var/www exists with group=web and setgid
       file:
@@ -129,7 +129,7 @@
         owner: root
         group: "{{ web_user }}"
         mode: "u=rwx,g=rwx,o=rx,g+s"
-      tags: esentials
+      tags: essentials
 
     # --- Node.js/PM2 section ---
     - name: Bootstrap NodeSource setup script (Node.js 22.x)
