@@ -498,7 +498,7 @@
         name: "Auto-publish via script.sh"
         minute: "*/1"
         user: "{{ build_user }}"
-        job: 'bash -lc ". ~/cronjob.env.sh >> ~/cronjob.log 2>&1; nvm use 22 1> ~/nvmuse.log; ~/script.sh >> ~/auto-publish.log 2>&1; kill $SSH_AGENT_PID"'
+        job: '/home/{{ build_user }}/script.sh >> /home/{{ build_user }}/auto-publish.log 2>&1'
       environment:
         HOME: "/home/{{ build_user }}"
       tags: slick-ui-demos
